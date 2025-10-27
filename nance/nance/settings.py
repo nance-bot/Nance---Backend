@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-%2&rmz(%5-yj(^5!v_t1w7ik33+7=u^@oh6f$gl$1o97+qkua!"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
 
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
@@ -136,8 +136,12 @@ else:
     # Fallback to SQLite for local development
     DATABASES = {
         "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'nance',  # Replace with your database name
+        'USER': 'admin',  # Replace with your database user
+        'PASSWORD': 'admin@123',  # Replace with your password
+        'HOST': 'localhost',  # Use the database server's address (default is localhost)
+        'PORT': '5432',  # Default PostgreSQL port
         }
     }
 
