@@ -1,1 +1,1 @@
-web: python manage.py migrate && python nance/nance/create_superuser.py && gunicorn nance.wsgi
+web: python manage.py migrate && python create_superuser.py && gunicorn nance.wsgi
