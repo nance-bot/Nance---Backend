@@ -8,6 +8,9 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     mobile = models.CharField(max_length=15, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True, null=True, blank=True)
+    
+    class Meta:
+        db_table = 'sms_customuser'  # Explicit table name to avoid conflicts
 
 class OTPRequest(models.Model):
     mobile = models.CharField(max_length=15)
