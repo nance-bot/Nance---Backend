@@ -1,1 +1,11 @@
-web: python manage.py migrate && python create_superuser.py && gunicorn nance.wsgi
+web: sh -c "\
+echo 'Starting: apply migrations (with retries)...'; \
+for i in 1 2 3 4 5; do \
+  python manage.py migrate --noinput && break || (echo 'migrate failed, retrying...' && sleep 3); \
+done; \
+echo 'Running collectstatic (non-fatal)...'; \
+python manage.py collectstatic --noinput || true; \
+echo 'Creating superuser...'; \
+python create_superuser.py || (echo 'create_superuser failed — aborting start' && exit 1); \
+echo 'Starting gunicorn'; \
+exec gunicorn nance.wsgi:application --workers 3 --bind 0.0.0.0:$PORT"
