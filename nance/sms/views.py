@@ -416,12 +416,16 @@ def receive_sms_message(request):
     Expected payload:
     {
         "sms_text": "Your SMS message content here",
-        "timestamp": "2025-01-15T10:30:00"  # ISO format timestamp
+        "timestamp": "2025-01-15T10:30:00",  # ISO format timestamp
+        "status": "optional status string",
+        "external_id": "optional external id string"
     }
     """
     
     sms_text = request.data.get("sms_text", "")
     raw_timestamp = request.data.get("timestamp")
+    status = request.data.get("status", None)
+    external_id = request.data.get("external_id", None)
 
     if not sms_text or not raw_timestamp:
         return Response({"error": "sms_text and timestamp are required"}, status=400)
@@ -436,7 +440,9 @@ def receive_sms_message(request):
     sms_message = SMSMessage.objects.create(
         user=request.user if hasattr(request, 'user') and request.user.is_authenticated else None,
         sms_text=sms_text,
-        timestamp=parsed_timestamp
+        timestamp=parsed_timestamp,
+        status=status,
+        external_id=external_id
     )
 
     return Response({
