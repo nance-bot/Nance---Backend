@@ -90,11 +90,7 @@ def authorize(request):
             include_granted_scopes='true'
         )
         
-        # Save state in session and ensure it's saved
         request.session['state'] = state
-        request.session.modified = True  # Force session save
-        request.session.save()  # Explicitly save session
-        
         return redirect(authorization_url)
     except FileNotFoundError as e:
         return HttpResponse(
@@ -116,8 +112,13 @@ def authorize(request):
 # Step 2: OAuth callback
 def oauth2callback(request):
     try:
-        # The Flow object can extract state from the callback URL automatically
-        # We don't need to rely on session - Google returns state in the callback URL
+        state = request.session.get('state')
+        if not state:
+            return HttpResponse(
+                "Error: OAuth state not found in session. Please start authorization again.",
+                status=400
+            )
+
         # Check if using environment variables
         if USE_ENV_VARS:
             client_config = {
@@ -132,6 +133,7 @@ def oauth2callback(request):
             flow = Flow.from_client_config(
                 client_config,
                 scopes=SCOPES,
+                state=state,
                 redirect_uri=REDIRECT_URI
             )
         else:
@@ -144,14 +146,9 @@ def oauth2callback(request):
             flow = Flow.from_client_secrets_file(
                 GOOGLE_OAUTH2_CLIENT_SECRETS_JSON,
                 scopes=SCOPES,
+                state=state,
                 redirect_uri=REDIRECT_URI
             )
-        
-        # Try to get state from session for validation (optional)
-        # If not available, Flow will extract it from callback URL
-        session_state = request.session.get('state')
-        if session_state:
-            flow.state = session_state
 
         flow.fetch_token(authorization_response=request.build_absolute_uri())
 
