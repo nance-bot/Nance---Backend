@@ -116,24 +116,8 @@ def authorize(request):
 # Step 2: OAuth callback
 def oauth2callback(request):
     try:
-        # Try to get state from session, or from query params as fallback
-        state = request.session.get('state')
-        
-        # If state not in session, try to get it from the authorization response
-        if not state:
-            # Try to extract state from the callback URL
-            from urllib.parse import urlparse, parse_qs
-            parsed_url = urlparse(request.build_absolute_uri())
-            query_params = parse_qs(parsed_url.query)
-            state = query_params.get('state', [None])[0]
-        
-        if not state:
-            return HttpResponse(
-                "Error: OAuth state not found in session. Please start authorization again.<br>"
-                "Make sure you're using the same browser session and cookies are enabled.",
-                status=400
-            )
-
+        # The Flow object can extract state from the callback URL automatically
+        # We don't need to rely on session - Google returns state in the callback URL
         # Check if using environment variables
         if USE_ENV_VARS:
             client_config = {
@@ -148,7 +132,6 @@ def oauth2callback(request):
             flow = Flow.from_client_config(
                 client_config,
                 scopes=SCOPES,
-                state=state,
                 redirect_uri=REDIRECT_URI
             )
         else:
@@ -161,9 +144,14 @@ def oauth2callback(request):
             flow = Flow.from_client_secrets_file(
                 GOOGLE_OAUTH2_CLIENT_SECRETS_JSON,
                 scopes=SCOPES,
-                state=state,
                 redirect_uri=REDIRECT_URI
             )
+        
+        # Try to get state from session for validation (optional)
+        # If not available, Flow will extract it from callback URL
+        session_state = request.session.get('state')
+        if session_state:
+            flow.state = session_state
 
         flow.fetch_token(authorization_response=request.build_absolute_uri())
 
