@@ -73,64 +73,6 @@ class RawSMSTransaction(models.Model):
 
 
 
-class GmailEmail(models.Model):
-    """Model to store financial emails from Gmail - Fold-like categorization."""
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message_id = models.CharField(max_length=100, unique=True)
-    thread_id = models.CharField(max_length=100)
-    subject = models.TextField()
-    sender = models.EmailField()
-    email_date = models.DateTimeField()
-    body_text = models.TextField()
-    
-    # Fold-like categorization
-    category = models.CharField(max_length=50, default='unknown')  # transaction, statement, notification, financial
-    subcategory = models.CharField(max_length=50, default='unknown')  # debit_transaction, monthly_statement, etc.
-    confidence = models.IntegerField(default=0)  # 0-100 confidence score
-    is_transaction = models.BooleanField(default=False)
-    is_statement = models.BooleanField(default=False)
-    is_notification = models.BooleanField(default=False)
-    
-    # Transaction details (if applicable)
-    parsed_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    parsed_merchant = models.CharField(max_length=200, null=True, blank=True)
-    parsed_transaction_type = models.CharField(max_length=20, null=True, blank=True)
-    parsed_payment_method = models.CharField(max_length=50, null=True, blank=True)  # UPI, Card, Net Banking, etc.
-    
-    # Email processing status
-    is_processed = models.BooleanField(default=False)
-    is_archived = models.BooleanField(default=False)
-    is_important = models.BooleanField(default=False)
-    
-    # Gmail labels
-    gmail_labels = models.JSONField(default=list, blank=True)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        ordering = ['-email_date']
-        indexes = [
-            models.Index(fields=['category', 'subcategory']),
-            models.Index(fields=['is_transaction', 'email_date']),
-            models.Index(fields=['sender', 'email_date']),
-        ]
-    
-    def __str__(self):
-        return f"{self.sender} - {self.category} - {self.subject[:50]}..."
-
-
-class GmailToken(models.Model):
-    # user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    access_token = models.TextField()
-    refresh_token = models.TextField(null=True, blank=True)
-    token_expiry = models.DateTimeField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    # def __str__(self):
-    #     return f"{self.user.email} Gmail Token"
-
 class SMSMessage(models.Model):
     """Model to store raw SMS messages with timestamp"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)

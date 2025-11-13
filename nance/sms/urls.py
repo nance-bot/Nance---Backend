@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views  # assuming views.py has the functions
 from rest_framework_simplejwt.views import TokenRefreshView
+
 urlpatterns = [
     #for otp
     path("auth/request-otp/", views.request_otp),
@@ -22,12 +23,6 @@ urlpatterns = [
     #call ml model
     path("ml-model/",views.call_ml_model, name="call_ml_model"),
 
-    #Gmail Integration
-    path('authorize/', views.authorize, name='authorize'),
-    path('oauth2callback/', views.oauth2callback, name='oauth2callback'),
-
-    # Email extraction endpoints
-    path('extract-emails/', views.extract_credit_card_emails, name='extract_credit_card_emails'),
-    path('check-new-emails/', views.check_new_credit_card_emails, name='check_new_credit_card_emails'),
-
 ]
+
+
