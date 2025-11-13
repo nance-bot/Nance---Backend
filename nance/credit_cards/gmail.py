@@ -36,14 +36,23 @@ def search_and_extract_credit_card_emails(check_new_only=True):
     # Gmail date format: after:YYYY/MM/DD before:YYYY/MM/DD
     date_filter = 'after:2025/09/20 before:2025/10/19'
     
+    # Exclude promotional emails
+    exclude_promotional = '-subject:("offer") -subject:("promotion") -subject:("discount") -subject:("deal") -subject:("sale") -subject:("pre-approved") -subject:("preapproved") -subject:("apply now") -subject:("upgrade") -subject:("special offer") -subject:("limited time") -subject:("exclusive") -subject:("newsletter") -subject:("update") -subject:("announcement")'
+    
+    # Focus on transaction-related keywords only
+    transaction_keywords = '(subject:("transaction") OR subject:("payment") OR subject:("spent") OR subject:("purchase") OR subject:("debit") OR subject:("credit") OR subject:("charged") OR subject:("billed") OR subject:("paid") OR subject:("withdrawal") OR subject:("deposit") OR subject:("transfer") OR subject:("upi") OR subject:("pos") OR subject:("atm") OR subject:("online payment"))'
+    
+    # Bank domains for transaction emails
+    bank_domains = '(from:*bank.com OR from:*bank.co.in OR from:*card.com OR from:*credit.com)'
+    
     # If check_new_only=True, search for emails from last 30 minutes (ignore date range)
     # If check_new_only=False, use the specific date range
     if check_new_only:
         time_filter = 'newer_than:30m'
-        query = f'{time_filter} (from:*bank.com OR from:*card.com OR from:*credit.com OR from:*financial.com OR from:*payment.com OR from:*wallet.com OR from:*upi.com OR subject:("credit card") OR subject:("debit card") OR subject:("transaction") OR subject:("payment") OR subject:("spent") OR subject:("purchase") OR subject:("billing") OR subject:("statement") OR subject:("receipt") OR subject:("invoice") OR subject:("refund") OR subject:("cashback") OR subject:("reward") OR subject:("balance") OR subject:("limit") OR subject:("due") OR subject:("overdue") OR subject:("minimum payment") OR subject:("auto pay") OR subject:("subscription") OR subject:("recurring") OR subject:("renewal"))'
+        query = f'{time_filter} {bank_domains} {transaction_keywords} {exclude_promotional}'
     else:
         # Use specific date range for extract-emails endpoint
-        query = f'{date_filter} (from:*bank.com OR from:*card.com OR from:*credit.com OR from:*financial.com OR from:*payment.com OR from:*wallet.com OR from:*upi.com OR subject:("credit card") OR subject:("debit card") OR subject:("transaction") OR subject:("payment") OR subject:("spent") OR subject:("purchase") OR subject:("billing") OR subject:("statement") OR subject:("receipt") OR subject:("invoice") OR subject:("refund") OR subject:("cashback") OR subject:("reward") OR subject:("balance") OR subject:("limit") OR subject:("due") OR subject:("overdue") OR subject:("minimum payment") OR subject:("auto pay") OR subject:("subscription") OR subject:("recurring") OR subject:("renewal"))'
+        query = f'{date_filter} {bank_domains} {transaction_keywords} {exclude_promotional}'
     
     results = service.users().messages().list(userId='me', q=query).execute()
     messages = results.get('messages', [])
