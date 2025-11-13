@@ -11,14 +11,25 @@ from .gmail import check_for_new_credit_card_emails, get_all_recent_credit_card_
 
 # Allow HTTP for local development (OAuth requires HTTPS by default)
 # Only set this in development, never in production!
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+if not os.environ.get('RENDER') and not os.environ.get('PRODUCTION'):
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # Absolute path to credentials
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GOOGLE_OAUTH2_CLIENT_SECRETS_JSON = os.path.join(BASE_DIR, 'sms', 'credentials.json')
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
-REDIRECT_URI = 'http://localhost:8000/credit-cards/oauth2callback/'
+
+# Determine redirect URI based on environment
+# In production (Render), use the production URL
+# In local development, use localhost
+import os
+if os.environ.get('RENDER') or os.environ.get('PRODUCTION'):
+    # Production URL
+    REDIRECT_URI = 'https://nance-backend.onrender.com/credit-cards/oauth2callback/'
+else:
+    # Local development
+    REDIRECT_URI = 'http://localhost:8000/credit-cards/oauth2callback/'
 
 # Check if we should use environment variables instead of credentials.json
 USE_ENV_VARS = os.environ.get('GOOGLE_CLIENT_ID') and os.environ.get('GOOGLE_CLIENT_SECRET')
@@ -79,7 +90,11 @@ def authorize(request):
             include_granted_scopes='true'
         )
         
+        # Save state in session and ensure it's saved
         request.session['state'] = state
+        request.session.modified = True  # Force session save
+        request.session.save()  # Explicitly save session
+        
         return redirect(authorization_url)
     except FileNotFoundError as e:
         return HttpResponse(
@@ -101,10 +116,21 @@ def authorize(request):
 # Step 2: OAuth callback
 def oauth2callback(request):
     try:
+        # Try to get state from session, or from query params as fallback
         state = request.session.get('state')
+        
+        # If state not in session, try to get it from the authorization response
+        if not state:
+            # Try to extract state from the callback URL
+            from urllib.parse import urlparse, parse_qs
+            parsed_url = urlparse(request.build_absolute_uri())
+            query_params = parse_qs(parsed_url.query)
+            state = query_params.get('state', [None])[0]
+        
         if not state:
             return HttpResponse(
-                "Error: OAuth state not found in session. Please start authorization again.",
+                "Error: OAuth state not found in session. Please start authorization again.<br>"
+                "Make sure you're using the same browser session and cookies are enabled.",
                 status=400
             )
 
